@@ -1,9 +1,10 @@
 import { supabase } from "../../utils/supabase-client"
+import {InferGetStaticPropsType} from "next";
 
-const SupabaseTest = ({ cantatas }) => {
+const SupabaseTest = ({ cantatas }: InferGetStaticPropsType<typeof getStaticProps>) => {
     return (
         <div>
-            {cantatas.map((cantata) => (
+            {cantatas?.map((cantata) => (
                 <p key={cantata.id}>{cantata.title}</p>
             ))}
         </div>
