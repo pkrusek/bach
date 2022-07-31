@@ -36,3 +36,5 @@ yarn-error.log*
 
 # IDE / Editor
 .idea
+
+/data.collecting/web.scraping/_data/

@@ -1,5 +1,5 @@
 import { supabase } from "../../utils/supabase-client"
-import {InferGetStaticPropsType} from "next";
+import {InferGetStaticPropsType} from "next"
 
 const SupabaseTest = ({ cantatas }: InferGetStaticPropsType<typeof getStaticProps>) => {
     return (
