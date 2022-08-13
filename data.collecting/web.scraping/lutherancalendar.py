@@ -91,6 +91,7 @@ def get_static_dates(year):
     events.loc[len(events)] = [f'{year}-01-01', EventType.NYD1.name]
     events.loc[len(events)] = [f'{year}-01-02', EventType.NYD2.name]
     events.loc[len(events)] = [f'{year}-01-06', EventType.EPH0.name]
+    events.loc[len(events)] = [f'{year}-02-02', EventType.PURI.name]
     events.loc[len(events)] = [f'{year}-06-24', EventType.JOHN.name]
     events.loc[len(events)] = [f'{year}-09-29', EventType.MICH.name]
     events.loc[len(events)] = [f'{year}-07-02', EventType.VISI.name]
