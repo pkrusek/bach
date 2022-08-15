@@ -80,9 +80,8 @@ class EventType(enum.Enum):
     VISI = {'title': "Visitation", 'link': 'https://en.wikipedia.org/wiki/Visitation_(Christianity)', 'bwv': [10, 147]}
     REFO = {'title': "Reformation Day", 'link': 'https://en.wikipedia.org/wiki/Reformation_Day', 'bwv': [79, 80]}
 
-
-events = pd.DataFrame(columns=['Date', 'Event Type'])
-
+# def append_to_dataframe(data):
+#     events = pd.concat([events, data])
 
 def get_static_dates(year):
     events.loc[len(events)] = [f'{year}-12-25', EventType.CHR1.name]
@@ -125,7 +124,7 @@ def get_dynamic_dates(year):
     whi2 = whi1 + timedelta(days=1)
     whi3 = whi1 + timedelta(days=2)
 
-    # sunday after Christmas
+    # Sunday after Christmas
     sunday_after_christmas = helpers.get_next_weekday(helpers.get_date_from_str(f'{year}-12-25'), 6)
     if sunday_after_christmas.year == year:
         events.loc[len(events)] = [sunday_after_christmas, EventType.CHR4.name]
@@ -181,6 +180,7 @@ def get_dynamic_dates(year):
 
 
 if __name__ == '__main__':
+    events = pd.DataFrame(columns=['Date', 'Event Type'])
     when = 2022
     get_static_dates(when)
     get_dynamic_dates(when)

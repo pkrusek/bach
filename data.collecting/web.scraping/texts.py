@@ -18,7 +18,8 @@ def get_text_for(cantata):
         instruments.append(td.find('em').text)
 
     for td in sp_table.find_all('td', class_='text'):
-        texts.append(td.text)
+        if td.previous_sibling.previous_sibling is not None:
+            texts.append(td.text)
 
     tmp_df = pd.DataFrame({'Movement': movements,
                            'Instruments': instruments,
@@ -33,17 +34,21 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
 
     df = pd.DataFrame()
-    bwv = pd.read_csv("./_data/cantatas.csv", usecols=[0], header=None)[0].tolist()
-    bwv = bwv[3:5]
 
-    for item in bwv:
+    # only sacred ones
+    bwv = list(range(1, 200))
+    bwv.remove(198)
+    # for testing purposes
+    # bwv = bwv[3:5]
+
+    for bwv_number in bwv:
         try:
-            tmp = get_text_for(item)
+            tmp = get_text_for(bwv_number)
             df = pd.concat([df, tmp])
-            logger.info(f'cantata processed {item}')
-            time.sleep(5.0)
+            # The server doesn't like fast requests
+            time.sleep(3.0)
         except(Exception,):
-            logger.error(f'error in cantata {item}')
+            logger.error(f'error in cantata {bwv_number}')
             pass
 
     df.to_csv('./_data/texts.csv')
