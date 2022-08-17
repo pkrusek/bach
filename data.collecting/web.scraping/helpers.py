@@ -1,6 +1,11 @@
+import time
+
 import requests as req
 from bs4 import BeautifulSoup as bs
 from datetime import date, datetime, timedelta
+import re
+import pandas as pd
+from pprint import pprint
 
 
 def get_easter(year):
@@ -87,3 +92,79 @@ def make_request(url):
     sp = bs(page.content, 'html.parser')
 
     return sp
+
+
+def clean_cantatas(df):
+    """
+    Cleans given dataframe.
+
+    Parameters
+    ----------
+    df : dataframe
+        Dataframe to clean.
+
+    Returns
+    ----------
+    df : Pandas dataframe
+        Cleaned dataframe.
+    """
+    df = df.copy(deep=True)
+    df['BWV'] = df['BWV'].apply(lambda x: re.sub('^0+\\s', '', str(x)))
+    df = df[pd.to_numeric(df['BWV'], errors='coerce').notnull()]
+    df['BWV'] = df['BWV'].str.lstrip('0')
+    # only sacred ones (magic numbers)
+    df['BWV'] = df['BWV'].astype(int)
+    df = df[(df['BWV'] < 200) & (df['BWV'] != 198)]
+
+    return df
+
+
+def get_all_sources(wiki_page):
+    """
+    Gets all html sources to cantata details from the table with all cantatas.
+
+    Returns
+    ----------
+    df : Pandas dataframe
+        List with dictionary with BWV numbers and html sources to the specific wiki pages.
+    """
+    try:
+        df = pd.read_csv('./_data/cantatas_sources.csv')
+        return df
+    except Exception as e:
+        print(f'error {str(e)}')
+        pass
+
+    sp = make_request(wiki_page)
+    sp_table = sp.find_all('table', class_='wikitable sortable')[0]
+    sp_trs = sp_table.findChildren(['tr'])
+    links = []
+    for tr in sp_trs:
+        link = tr.select_one(':nth-child(2)').select_one('a')
+        if link is not None:
+            data = {
+                "BWV": re.sub('^0+\\s', '', tr.select_one(':nth-child(1)').text),
+                "link": 'https://en.wikipedia.org' + link['href']
+            }
+            links.append(data)
+    # for testing purposes
+    links = links[0:5]
+    df = pd.DataFrame(links)
+    df = clean_cantatas(df)
+
+    sp_sources = []
+    for row in df.itertuples():
+        try:
+            sp = make_request(row[2])
+            sp_sources.append(sp)
+            print(f'cantata {row[1]}')
+            time.sleep(3.0)
+        except(Exception,):
+            print(f'error in cantata {row[1]}')
+            pass
+
+    df['source'] = sp_sources
+
+    df.to_csv("./_data/cantatas_sources.csv")
+
+    return df

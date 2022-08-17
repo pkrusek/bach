@@ -6,6 +6,9 @@ import warnings
 import pandas as pd
 import numpy as np
 import re
+import logging
+from bs4 import BeautifulSoup as bs
+import time
 
 
 class InstrumentGroup(enum.Enum):
@@ -78,31 +81,6 @@ class Instrument(enum.Enum):
     xx = {'title': '', 'links': ['']}
 
 
-def clean_cantatas(df):
-    """
-    Cleans given dataframe.
-
-    Parameters
-    ----------
-    df : dataframe
-        Dataframe to clean.
-
-    Returns
-    ----------
-    df : Pandas dataframe
-        Cleaned dataframe.
-    """
-    df = df.copy(deep=True)
-    df['BWV'] = df['BWV'].apply(lambda x: re.sub('^0+\\s', '', str(x)))
-    df = df[pd.to_numeric(df['BWV'], errors='coerce').notnull()]
-    df['BWV'] = df['BWV'].str.lstrip('0')
-    # only sacred ones (magic numbers)
-    df['BWV'] = df['BWV'].astype(int)
-    df = df[(df['BWV'] < 200) & (df['BWV'] != 198)]
-
-    return df
-
-
 def get_instruments_for_cantatas():
     """
     Parses table with list of all cantatas, converts them to pandas, and exports data to CSV file.
@@ -116,11 +94,11 @@ def get_instruments_for_cantatas():
     sp_table = sp.find_all('table', class_='wikitable sortable')[0]
     # pprint(sp_table)
     df = pd.read_html(str(sp_table))[0]
-    df = clean_cantatas(df)
+    df = helpers.clean_cantatas(df)
     df = df.loc[:, ['BWV', 'Solo', 'Choir', 'Brass', 'Wood', 'Strings', 'Key', 'Bc']]
-    df.Brass = df.Brass.str.lower()
-    df.Wood = df.Wood.str.lower()
-    df.Strings = df.Strings.str.lower()
+    # df.Brass = df.Brass.str.lower()
+    # df.Wood = df.Wood.str.lower()
+    # df.Strings = df.Strings.str.lower()
     return df
 
 
@@ -137,14 +115,83 @@ def process_instrument_group(instrument):
         df_cantatas = pd.concat([df_cantatas, tmp])
 
 
+def get_movements(sp, bwv):
+    ret_df = pd.DataFrame()
+    try:
+        sp = bs(sp, "html.parser")
+        table = sp.find_all(text=re.compile('Movements of'))[0].findParent('table')
+        pprint(sp.find_all(text=re.compile('Movements of')))
+        ret_df = pd.read_html(str(table))[0]
+        ret_df['BWV'] = bwv
+    except Exception as e:
+        # logger.error(f'error in cantata {bwv} with error {str(e)}')
+        pass
+
+    return ret_df
+
+
+def get_movement_source_for(cantata):
+    global df_movement_sources
+    try:
+        sp = helpers.make_request(f'https://bach-cantatas.com/INS/{cantata}')
+        tmp = pd.DataFrame(columns=['BWV','Source'])
+        tmp.loc[0] = [cantata, sp]
+        df_movement_sources = pd.concat([df_movement_sources, tmp])
+
+        next_mvt = sp.find(text=re.compile('Next Mvt')).findParent('a')
+        if next_mvt is None:
+            pprint(f'cantata {cantata} done')
+            df_movement_sources.to_csv("./_data/movements_sources.csv")
+            time.sleep(1.5)
+            get_movements_sources(cantata)
+        else:
+            pprint(f'cantata {cantata} done')
+            time.sleep(1.5)
+            get_movement_source_for(next_mvt['href'])
+    except Exception as e:
+        logger.error(f'error in source - cantata {cantata} with error {str(e)}')
+        get_movements_sources(cantata)
+
+
+def get_movements_sources(cantata):
+    # 'BWV015-01.htm'
+    # 'BWV082-01.htm'
+    # 'BWV118-01.htm'
+    # '127, 128'
+    cantata = re.sub('-.*htm', '-01.htm', cantata)
+    bwv = list(range(1, 200))
+    bwv.remove(198)
+    bwv = list(map(lambda x: f'BWV{str(x).zfill(3)}-01.htm', bwv))
+    try:
+        indx = bwv.index(cantata)
+        if indx + 1 < len(bwv):
+            next_cantata = bwv[indx + 1]
+            get_movement_source_for(next_cantata)
+    except Exception as e:
+        logger.error(f'error in sources - cantata {cantata} with error {str(e)}')
+
+
 if __name__ == '__main__':
-    df_cantatas = pd.DataFrame()
-    df = get_instruments_for_cantatas()
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
 
-    process_instrument_group('Brass')
-    process_instrument_group('Wood')
-    process_instrument_group('Brass')
-    process_instrument_group('Bc')
-    process_instrument_group('Key')
+    df_movement_sources = pd.DataFrame()
 
-    pprint(df_cantatas.head(36))
+    get_movement_source_for('BWV001-01.htm')
+    # df = pd.read_csv('./_data/movements_sources.csv')
+    # pprint(df)
+
+    # df_cantatas = pd.DataFrame()
+    # df = get_instruments_for_cantatas()
+    #
+    # process_instrument_group('Brass')
+    # process_instrument_group('Wood')
+    # process_instrument_group('Brass')
+    # process_instrument_group('Bc')
+    # process_instrument_group('Key')
+
+    # df_sources = helpers.get_all_sources('https://en.wikipedia.org/wiki/List_of_Bach_cantatas')
+    # res = [get_movements(x, y) for x, y in zip(df_sources['source'], df_sources['BWV'])]
+    # pprint(res)
+
+    # pprint(df_cantatas.head(36))

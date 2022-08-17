@@ -179,7 +179,7 @@ def get_movements(sp, bwv):
 
 
 def main():
-    df = save_all_cantatas()
+    # df = save_all_cantatas()
     # get_all_pages()
     # save_all_cantatas()
 
