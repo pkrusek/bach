@@ -71,8 +71,13 @@ def calc_easter(year):
     return datetime(year, month, day)
 
 
-class ChristianHoliday:
+class ChristianGroup:
+    def __init__(self, title, url_link):
+        self.title = title
+        self.url_link = url_link
 
+
+class ChristianHoliday:
     def __init__(self, title, url_link, group='', dates=None):
         if dates is None:
             dates = []
@@ -90,6 +95,10 @@ class ChristianHoliday:
                     self.dates.append(self.__christmas(year).get(holiday.name))
                 case ChurchYear.PALM_SUNDAY | ChurchYear.GOOD_FRIDAY | ChurchYear.HOLY_SATURDAY | ChurchYear.EASTER:
                     self.dates.append(self.__holy_week(year).get(holiday.name))
+                case ChurchYear.SEXAGESIMA | ChurchYear.SEPTUAGESIMA | ChurchYear.QUINQUAGESIMA:
+                    self.dates.append(self.__shrovetide(year).get(holiday.name))
+                case ChurchYear.EPIPHANY_1:
+                    self.__epiphany(year)
                 case _:
                     pass
 
@@ -128,6 +137,40 @@ class ChristianHoliday:
         return date_from_str(f'{year}-01-01')
 
     @staticmethod
+    def __epiphany(year):
+        ret_val = {}
+        epiphany_1 = date_from_str(f'{year}-01-06')
+        ret_val[ChurchYear.EPIPHANY_1.name] = epiphany_1
+
+        types = [church_year.name for church_year in ChurchYear]
+        epiphany = list(filter(lambda x: re.compile('EPIPHANY').match(x), types))
+        epiphany.pop(0)
+
+        easter = calc_easter(year)
+        quinquagesima = easter - timedelta(weeks=7)
+        for index, key in enumerate(epiphany):
+            date = epiphany_1 + timedelta(weeks=index + 1)
+            if date < quinquagesima:
+                ret_val[key] = date
+
+        return ret_val
+
+    @staticmethod
+    def __shrovetide(year):
+        easter = calc_easter(year)
+        quinquagesima = easter - timedelta(weeks=7)
+        sexagesima = quinquagesima - timedelta(weeks=1)
+        septuagesima = sexagesima - timedelta(weeks=1)
+
+        ret_val = {
+            ChurchYear.SEXAGESIMA.name: sexagesima,
+            ChurchYear.SEPTUAGESIMA.name: septuagesima,
+            ChurchYear.QUINQUAGESIMA.name: quinquagesima
+        }
+
+        return ret_val
+
+    @staticmethod
     def __holy_week(year):
         easter = calc_easter(year)
         palm_sunday = easter - timedelta(weeks=1)
@@ -144,32 +187,49 @@ class ChristianHoliday:
         return ret_val
 
 
-class HolidayGroup(Enum):
-    ADVENT = 'Advent'
-    CHRISTMAS = 'Christmas'
-    HOLY_WEEK = 'Holy Week'
+class ChurchGroup(ChristianGroup, Enum):
+    ADVENT = 'Advent', 'https://en.wikipedia.org/wiki/Advent'
+    CHRISTMAS = 'Christmas', 'https://en.wikipedia.org/wiki/Christmas'
+    EPIPHANY = 'Epiphany', 'https://en.wikipedia.org/wiki/Epiphany_season'
+    SHROVETIDE = 'Shrovetide', 'https://en.wikipedia.org/wiki/Shrovetide'
+    HOLY_WEEK = 'Holy Week', 'https://en.wikipedia.org/wiki/Holy_Week'
 
 
 class ChurchYear(ChristianHoliday, Enum):
-    ADVENT_1 = 'Advent I', 'https://en.wikipedia.org/wiki/Advent', HolidayGroup.ADVENT.value
-    ADVENT_2 = 'Advent II', 'https://en.wikipedia.org/wiki/Advent', HolidayGroup.ADVENT.value
-    ADVENT_3 = 'Advent III', 'https://en.wikipedia.org/wiki/Advent', HolidayGroup.ADVENT.value
-    ADVENT_4 = 'Advent IV', 'https://en.wikipedia.org/wiki/Advent', HolidayGroup.ADVENT.value
-    CHRISTMAS_1 = 'Christmas Day', 'https://en.wikipedia.org/wiki/Christmas', HolidayGroup.CHRISTMAS.value
-    CHRISTMAS_2 = "Saint Stephen's Day", 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day', HolidayGroup.CHRISTMAS.value
-    CHRISTMAS_3 = 'Third day of Christmas', 'https://en.wikipedia.org/wiki/Christmas', HolidayGroup.CHRISTMAS.value
-    CHRISTMAS_4 = 'Sunday after Christmas', 'https://en.wikipedia.org/wiki/Christmas_Sunday', HolidayGroup.CHRISTMAS.value
-    PALM_SUNDAY = "Palm Sunday", 'https://en.wikipedia.org/wiki/Palm_Sunday', HolidayGroup.HOLY_WEEK.value
-    GOOD_FRIDAY = 'Good Friday', 'https://en.wikipedia.org/wiki/Good_Friday', HolidayGroup.HOLY_WEEK.value
-    HOLY_SATURDAY = 'Holy Saturday', 'https://en.wikipedia.org/wiki/Holy_Saturday', HolidayGroup.HOLY_WEEK.value
-    EASTER = "Easter", 'https://en.wikipedia.org/wiki/Easter', HolidayGroup.HOLY_WEEK.value
+    ADVENT_1 = 'Advent I', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
+    ADVENT_2 = 'Advent II', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
+    ADVENT_3 = 'Advent III', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
+    ADVENT_4 = 'Advent IV', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
+    CHRISTMAS_1 = 'Christmas Day', 'https://en.wikipedia.org/wiki/Christmas', ChurchGroup.CHRISTMAS.value
+    CHRISTMAS_2 = "Saint Stephen's Day", 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day', ChurchGroup.CHRISTMAS.value
+    CHRISTMAS_3 = 'Third day of Christmas', 'https://en.wikipedia.org/wiki/Christmas', ChurchGroup.CHRISTMAS.value
+    CHRISTMAS_4 = 'Sunday after Christmas', 'https://en.wikipedia.org/wiki/Christmas_Sunday', ChurchGroup.CHRISTMAS.value
+    # nebo nazev po Novem roce
+    EPIPHANY_1 = 'Epiphany', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
+    EPIPHANY_2 = 'Epiphany I', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
+    EPIPHANY_3 = 'Epiphany II', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
+    EPIPHANY_4 = 'Epiphany III', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
+    EPIPHANY_5 = 'Epiphany IV', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
+    EPIPHANY_6 = 'Epiphany V', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
+    # how many epiphany?
+    SEPTUAGESIMA = 'Septuagesima', 'https://en.wikipedia.org/wiki/Septuagesima', ChurchGroup.SHROVETIDE.value
+    SEXAGESIMA = 'Sexagesima', 'https://en.wikipedia.org/wiki/Sexagesima', ChurchGroup.SHROVETIDE.value
+    QUINQUAGESIMA = 'Quinquagesima', 'https://en.wikipedia.org/wiki/Quinquagesima', ChurchGroup.SHROVETIDE.value
+    PALM_SUNDAY = 'Palm Sunday', 'https://en.wikipedia.org/wiki/Palm_Sunday', ChurchGroup.HOLY_WEEK.value
+    GOOD_FRIDAY = 'Good Friday', 'https://en.wikipedia.org/wiki/Good_Friday', ChurchGroup.HOLY_WEEK.value
+    HOLY_SATURDAY = 'Holy Saturday', 'https://en.wikipedia.org/wiki/Holy_Saturday', ChurchGroup.HOLY_WEEK.value
+    EASTER = 'Easter', 'https://en.wikipedia.org/wiki/Easter', ChurchGroup.HOLY_WEEK.value
 
 
 if __name__ == '__main__':
     holidays = []
 
+    print("Sexagesima".upper())
     for member in ChurchYear:
+        # print(member)
         holidays.append(member.dates_for_holiday(member))
 
+    # print(holidays)
     df = pd.DataFrame([vars(t) for t in holidays]).loc[:, ['title', 'url_link', 'group', 'dates']]
+    # df['group'].str.split(' ', expand=True).set_axis(['Number', 'Letter'], axis='group')
     df.to_csv("test.csv", index=False)
