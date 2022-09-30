@@ -97,8 +97,12 @@ class ChristianHoliday:
                     self.dates.append(self.__holy_week(year).get(holiday.name))
                 case ChurchYear.SEXAGESIMA | ChurchYear.SEPTUAGESIMA | ChurchYear.QUINQUAGESIMA:
                     self.dates.append(self.__shrovetide(year).get(holiday.name))
-                case ChurchYear.EPIPHANY_1:
-                    self.__epiphany(year)
+                case ChurchYear.EPIPHANY_1 | ChurchYear.EPIPHANY_2 | ChurchYear.EPIPHANY_3 | ChurchYear.EPIPHANY_4 | ChurchYear.EPIPHANY_5 | ChurchYear.EPIPHANY_6:
+                    self.dates.append(self.__epiphany(year).get(holiday.name))
+                case ChurchYear.QUASIMODOGENITI | ChurchYear.MISERICORDIAS_DOMINI | ChurchYear.JUBILATE | ChurchYear.CANTATE | ChurchYear.ROGATE | ChurchYear.ASCENSION | ChurchYear.EXAUDI:
+                    self.dates.append(self.__after_easter(year).get(holiday.name))
+                case ChurchYear.WHIT_1 | ChurchYear.WHIT_2 | ChurchYear.WHIT_3:
+                    self.dates.append(self.__whit(year).get(holiday.name))
                 case _:
                     pass
 
@@ -186,6 +190,40 @@ class ChristianHoliday:
 
         return ret_val
 
+    @staticmethod
+    def __after_easter(year):
+        ret_val = {}
+        easter = calc_easter(year)
+        sundays = [
+            ChurchYear.QUASIMODOGENITI.name,
+            ChurchYear.MISERICORDIAS_DOMINI.name,
+            ChurchYear.JUBILATE.name,
+            ChurchYear.CANTATE.name,
+            ChurchYear.ROGATE.name,
+            ChurchYear.EXAUDI.name
+        ]
+
+        for index, key in enumerate(sundays):
+            ret_val[key] = easter + timedelta(weeks=index + 1)
+
+        ret_val[ChurchYear.ASCENSION.name] = last_weekday(easter + timedelta(weeks=6), 3)
+
+        return ret_val
+
+    @staticmethod
+    def __whit(year):
+        easter = calc_easter(year)
+        whit1 = easter + timedelta(weeks=7)
+        whit2 = whit1 + timedelta(days=1)
+        whit3 = whit2 + timedelta(days=1)
+
+        ret_val = {
+            ChurchYear.WHIT_1.name: whit1,
+            ChurchYear.WHIT_2.name: whit2,
+            ChurchYear.WHIT_3.name: whit3
+        }
+
+        return ret_val
 
 class ChurchGroup(ChristianGroup, Enum):
     ADVENT = 'Advent', 'https://en.wikipedia.org/wiki/Advent'
@@ -193,6 +231,8 @@ class ChurchGroup(ChristianGroup, Enum):
     EPIPHANY = 'Epiphany', 'https://en.wikipedia.org/wiki/Epiphany_season'
     SHROVETIDE = 'Shrovetide', 'https://en.wikipedia.org/wiki/Shrovetide'
     HOLY_WEEK = 'Holy Week', 'https://en.wikipedia.org/wiki/Holy_Week'
+    AFTER_EASTER = 'After Easter', ''
+    WHIT = 'Whit', ''
 
 
 class ChurchYear(ChristianHoliday, Enum):
@@ -211,7 +251,8 @@ class ChurchYear(ChristianHoliday, Enum):
     EPIPHANY_4 = 'Epiphany III', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
     EPIPHANY_5 = 'Epiphany IV', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
     EPIPHANY_6 = 'Epiphany V', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    # how many epiphany?
+    CANDLEMAS = 'Candlemas', 'https://en.wikipedia.org/wiki/Candlemas'
+    # 'https://en.wikipedia.org/wiki/Presentation_of_Jesus_at_the_Temple'
     SEPTUAGESIMA = 'Septuagesima', 'https://en.wikipedia.org/wiki/Septuagesima', ChurchGroup.SHROVETIDE.value
     SEXAGESIMA = 'Sexagesima', 'https://en.wikipedia.org/wiki/Sexagesima', ChurchGroup.SHROVETIDE.value
     QUINQUAGESIMA = 'Quinquagesima', 'https://en.wikipedia.org/wiki/Quinquagesima', ChurchGroup.SHROVETIDE.value
@@ -220,11 +261,22 @@ class ChurchYear(ChristianHoliday, Enum):
     HOLY_SATURDAY = 'Holy Saturday', 'https://en.wikipedia.org/wiki/Holy_Saturday', ChurchGroup.HOLY_WEEK.value
     EASTER = 'Easter', 'https://en.wikipedia.org/wiki/Easter', ChurchGroup.HOLY_WEEK.value
 
+    QUASIMODOGENITI = 'Second Sunday of Easter (Quasimodogeniti)', 'https://en.wikipedia.org/wiki/Second_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
+    MISERICORDIAS_DOMINI = 'Third Sunday of Easter (Misericordias Domini)', 'https://en.wikipedia.org/wiki/Third_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
+    JUBILATE = 'Fourth Sunday of Easter (Jubilate)', 'https://en.wikipedia.org/wiki/Fourth_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
+    CANTATE = 'Fifth Sunday of Easter (Cantate)', 'https://en.wikipedia.org/wiki/Fifth_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
+    ROGATE = 'Sixth Sunday of Easter (Rogate)', 'https://en.wikipedia.org/wiki/Rogation_days', ChurchGroup.AFTER_EASTER.value
+    ASCENSION = 'Holy Thursday (Ascension)', 'https://en.wikipedia.org/wiki/Feast_of_the_Ascension', ChurchGroup.AFTER_EASTER.value
+    EXAUDI = 'Sunday after the Ascension (Exaudi)', 'https://www.csmedia1.com/ziondetroit.org/exaudi.pdf', ChurchGroup.AFTER_EASTER.value
+    WHIT_1 = 'Whit Sunday (Pentecost)', 'https://en.wikipedia.org/wiki/Pentecost', ChurchGroup.WHIT.value
+    WHIT_2 = 'Whit Monday', 'https://en.wikipedia.org/wiki/Whit_Monday', ChurchGroup.WHIT.value
+    WHIT_3 = 'Whit Tuesday', 'https://en.wikipedia.org/wiki/Whit_Tuesday', ChurchGroup.WHIT.value
+
 
 if __name__ == '__main__':
     holidays = []
 
-    print("Sexagesima".upper())
+    print("Ascension".upper())
     for member in ChurchYear:
         # print(member)
         holidays.append(member.dates_for_holiday(member))
