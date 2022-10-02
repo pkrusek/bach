@@ -71,6 +71,20 @@ def calc_easter(year):
     return datetime(year, month, day)
 
 
+def int_to_roman(num):
+    m = ["", "M", "MM", "MMM"]
+    c = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
+    x = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"]
+    i = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"]
+
+    thousands = m[num // 1000]
+    hundreds = c[(num % 1000) // 100]
+    tens = x[(num % 100) // 10]
+    ones = i[num % 10]
+
+    return thousands + hundreds + tens + ones
+
+
 class ChristianGroup:
     def __init__(self, title, url_link):
         self.title = title
@@ -86,13 +100,15 @@ class ChristianHoliday:
         self.group = group
         self.dates = dates
 
-    def dates_for_holiday(self, holiday):
-        for year in range(2022, 2023):
+    def dates_for_holiday(self, holiday, years):
+        # print(holiday.group.name)
+        for year in years:
             match holiday:
-                case ChurchYear.ADVENT_1 | ChurchYear.ADVENT_2 | ChurchYear.ADVENT_3 | ChurchYear.ADVENT_4:
+                case _ as holiday if 'ADVENT_' in holiday.name:
                     self.dates.append(self.__advents(year).get(holiday.name))
-                case ChurchYear.CHRISTMAS_1 | ChurchYear.CHRISTMAS_2 | ChurchYear.CHRISTMAS_3 | ChurchYear.CHRISTMAS_4:
+                case _ as holiday if 'CHRISTMAS_' in holiday.name:
                     self.dates.append(self.__christmas(year).get(holiday.name))
+                # case _ as holiday if 'CHRISTMAS_' in holiday.name:
                 case ChurchYear.PALM_SUNDAY | ChurchYear.GOOD_FRIDAY | ChurchYear.HOLY_SATURDAY | ChurchYear.EASTER:
                     self.dates.append(self.__holy_week(year).get(holiday.name))
                 case ChurchYear.SEXAGESIMA | ChurchYear.SEPTUAGESIMA | ChurchYear.QUINQUAGESIMA:
@@ -101,8 +117,10 @@ class ChristianHoliday:
                     self.dates.append(self.__epiphany(year).get(holiday.name))
                 case ChurchYear.QUASIMODOGENITI | ChurchYear.MISERICORDIAS_DOMINI | ChurchYear.JUBILATE | ChurchYear.CANTATE | ChurchYear.ROGATE | ChurchYear.ASCENSION | ChurchYear.EXAUDI:
                     self.dates.append(self.__after_easter(year).get(holiday.name))
-                case ChurchYear.WHIT_1 | ChurchYear.WHIT_2 | ChurchYear.WHIT_3:
+                case _ as holiday if 'WHIT_' in holiday.name:
                     self.dates.append(self.__whit(year).get(holiday.name))
+                case _ as holiday if 'TRINITY_' in holiday.name:
+                    self.dates.append(self.__trinity(year).get(holiday.name))
                 case _:
                     pass
 
@@ -154,8 +172,8 @@ class ChristianHoliday:
         quinquagesima = easter - timedelta(weeks=7)
         for index, key in enumerate(epiphany):
             date = epiphany_1 + timedelta(weeks=index + 1)
-            if date < quinquagesima:
-                ret_val[key] = date
+            #if date < quinquagesima:
+            ret_val[key] = date
 
         return ret_val
 
@@ -213,17 +231,37 @@ class ChristianHoliday:
     @staticmethod
     def __whit(year):
         easter = calc_easter(year)
-        whit1 = easter + timedelta(weeks=7)
-        whit2 = whit1 + timedelta(days=1)
-        whit3 = whit2 + timedelta(days=1)
+        whit_1 = easter + timedelta(weeks=7)
+        whit_2 = whit_1 + timedelta(days=1)
+        whit_3 = whit_2 + timedelta(days=1)
 
         ret_val = {
-            ChurchYear.WHIT_1.name: whit1,
-            ChurchYear.WHIT_2.name: whit2,
-            ChurchYear.WHIT_3.name: whit3
+            ChurchYear.WHIT_1.name: whit_1,
+            ChurchYear.WHIT_2.name: whit_2,
+            ChurchYear.WHIT_3.name: whit_3,
         }
 
         return ret_val
+
+    @staticmethod
+    def __trinity(year):
+        christmas = date_from_str(f'{year}-12-25')
+        easter = calc_easter(year)
+        advent_4 = last_weekday(christmas, 6)
+
+        start_date = easter + timedelta(weeks=7)
+        end_date = advent_4 - timedelta(weeks=3)
+
+        types = [member.name for member in ChurchYear]
+        trinitatis = list(filter(lambda x: re.compile('TRINITY_').match(x), types))
+        ret_val = {}
+        for index, key in enumerate(trinitatis):
+            date = start_date + timedelta(weeks=index + 1)
+            if date < end_date:
+                ret_val[key] = start_date + timedelta(weeks=index + 1)
+
+        return ret_val
+
 
 class ChurchGroup(ChristianGroup, Enum):
     ADVENT = 'Advent', 'https://en.wikipedia.org/wiki/Advent'
@@ -233,6 +271,7 @@ class ChurchGroup(ChristianGroup, Enum):
     HOLY_WEEK = 'Holy Week', 'https://en.wikipedia.org/wiki/Holy_Week'
     AFTER_EASTER = 'After Easter', ''
     WHIT = 'Whit', ''
+    TRINITY = 'Trinity', ''
 
 
 class ChurchYear(ChristianHoliday, Enum):
@@ -273,13 +312,55 @@ class ChurchYear(ChristianHoliday, Enum):
     WHIT_3 = 'Whit Tuesday', 'https://en.wikipedia.org/wiki/Whit_Tuesday', ChurchGroup.WHIT.value
 
 
+def generate_trinity_enum():
+    index = 0
+    enum_objects = []
+    while index < 28:
+        obj = 'TRINITY_' + str(index + 1), (('Trinity ' + int_to_roman(index)).rstrip(), 'https://en.wikipedia.org/wiki/Trinity_Sunday', ChurchGroup.TRINITY.value)
+        enum_objects.append(obj)
+        index += 1
+
+    ret_val = Enum(
+        "ChurchYear",
+        [(church_year.name, church_year.value) for church_year in ChurchYear] + enum_objects,
+        type=ChristianHoliday,
+    )
+
+    return ret_val
+
+
+def christian_holidays():
+    ChurchYear = generate_trinity_enum()
+    holidays = []
+    for member in ChurchYear:
+        # print(member.value)
+        holidays.append(member.dates_for_holiday(member, range(2022, 2023)))
+
+    df = pd.DataFrame([vars(t) for t in holidays]).loc[:, ['title', 'url_link', 'group', 'dates']]
+    df.to_csv("test.csv", index=False)
+
 if __name__ == '__main__':
+    # christian_holidays()
     holidays = []
 
-    print("Ascension".upper())
+    # print("Ascension".upper())
+
+    # types = [church_year for church_year in ChurchYear]
+    # # print(types)
+    # ExistingEnum = Enum('ExistingEnum', types)
+    # for member in ExistingEnum:
+    #     print(member)
+    # ChurchYear = Enum(
+    #     "ChurchYear",
+    #     [(church_year.name, church_year.value) for church_year in ChurchYear] + [('WHIT_4', ('Whit Test', 'https://en.wikipedia.org/wiki/Whit_Tuesday', ChurchGroup.WHIT.value))],
+    #     type=ChristianHoliday,
+    # )
+    # generate_trinity_enum()
+    ChurchYear = generate_trinity_enum()
+
     for member in ChurchYear:
         # print(member)
-        holidays.append(member.dates_for_holiday(member))
+        holidays.append(member.dates_for_holiday(member, range(2022, 2023)))
 
     # print(holidays)
     df = pd.DataFrame([vars(t) for t in holidays]).loc[:, ['title', 'url_link', 'group', 'dates']]
