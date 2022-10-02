@@ -101,7 +101,7 @@ class ChristianHoliday:
         self.dates = dates
 
     def dates_for_holiday(self, holiday, years):
-        # print(holiday.group.name)
+        print(holiday.group)
         for year in years:
             match holiday:
                 case _ as holiday if 'ADVENT_' in holiday.name:
@@ -120,7 +120,9 @@ class ChristianHoliday:
                 case _ as holiday if 'WHIT_' in holiday.name:
                     self.dates.append(self.__whit(year).get(holiday.name))
                 case _ as holiday if 'TRINITY_' in holiday.name:
-                    self.dates.append(self.__trinity(year).get(holiday.name))
+                    trinity_data = self.__trinity(year).get(holiday.name)
+                    if trinity_data is not None:
+                        self.dates.append(trinity_data)
                 case _:
                     pass
 
@@ -128,7 +130,7 @@ class ChristianHoliday:
 
     def __advents(self, year):
         types = [church_year.name for church_year in ChurchYear]
-        advents = list(filter(lambda x: re.compile('ADVENT').match(x), types))[: -1]
+        advents = list(filter(lambda x: re.compile('ADVENT').match(x), types))[:-1]
 
         ret_val = {}
         advent_4 = last_weekday(self.__christmas(year)[ChurchYear.CHRISTMAS_1.name], 6)
@@ -168,11 +170,8 @@ class ChristianHoliday:
         epiphany = list(filter(lambda x: re.compile('EPIPHANY').match(x), types))
         epiphany.pop(0)
 
-        easter = calc_easter(year)
-        quinquagesima = easter - timedelta(weeks=7)
         for index, key in enumerate(epiphany):
             date = epiphany_1 + timedelta(weeks=index + 1)
-            #if date < quinquagesima:
             ret_val[key] = date
 
         return ret_val
@@ -359,7 +358,6 @@ if __name__ == '__main__':
     ChurchYear = generate_trinity_enum()
 
     for member in ChurchYear:
-        # print(member)
         holidays.append(member.dates_for_holiday(member, range(2022, 2023)))
 
     # print(holidays)
