@@ -71,6 +71,10 @@ def calc_easter(year):
     return datetime(year, month, day)
 
 
+def calc_christmas(year):
+    return date_from_str(f'{year}-12-25')
+
+
 def int_to_roman(num):
     m = ["", "M", "MM", "MMM"]
     c = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
@@ -85,37 +89,37 @@ def int_to_roman(num):
     return thousands + hundreds + tens + ones
 
 
-class ChristianGroup:
+class CalendarSeason:
     def __init__(self, title, url_link):
         self.title = title
         self.url_link = url_link
 
 
 class ChristianHoliday:
-    def __init__(self, title, url_link, group='', dates=None):
+    def __init__(self, title, url_link, labels=None, dates=None):
         if dates is None:
             dates = []
+        if labels is None:
+            labels = []
         self.title = title
         self.url_link = url_link
-        self.group = group
+        self.labels = labels
         self.dates = dates
 
     def dates_for_holiday(self, holiday, years):
-        print(holiday.group)
         for year in years:
             match holiday:
                 case _ as holiday if 'ADVENT_' in holiday.name:
                     self.dates.append(self.__advents(year).get(holiday.name))
                 case _ as holiday if 'CHRISTMAS_' in holiday.name:
                     self.dates.append(self.__christmas(year).get(holiday.name))
-                # case _ as holiday if 'CHRISTMAS_' in holiday.name:
-                case ChurchYear.PALM_SUNDAY | ChurchYear.GOOD_FRIDAY | ChurchYear.HOLY_SATURDAY | ChurchYear.EASTER:
-                    self.dates.append(self.__holy_week(year).get(holiday.name))
-                case ChurchYear.SEXAGESIMA | ChurchYear.SEPTUAGESIMA | ChurchYear.QUINQUAGESIMA:
-                    self.dates.append(self.__shrovetide(year).get(holiday.name))
-                case ChurchYear.EPIPHANY_1 | ChurchYear.EPIPHANY_2 | ChurchYear.EPIPHANY_3 | ChurchYear.EPIPHANY_4 | ChurchYear.EPIPHANY_5 | ChurchYear.EPIPHANY_6:
+                case _ as holiday if 'EPIPHANY_' in holiday.name:
                     self.dates.append(self.__epiphany(year).get(holiday.name))
-                case ChurchYear.QUASIMODOGENITI | ChurchYear.MISERICORDIAS_DOMINI | ChurchYear.JUBILATE | ChurchYear.CANTATE | ChurchYear.ROGATE | ChurchYear.ASCENSION | ChurchYear.EXAUDI:
+                case _ as holiday if LabelCalendarSeason.SHROVETIDE.value[0] in holiday.labels[0][0]:
+                    self.dates.append(self.__shrovetide(year).get(holiday.name))
+                case _ as holiday if LabelCalendarSeason.HOLY_WEEK.value[0] in holiday.labels[0][0]:
+                    self.dates.append(self.__holy_week(year).get(holiday.name))
+                case _ as holiday if LabelCalendarSeason.AFTER_EASTER.value[0] in holiday.labels[0][0]:
                     self.dates.append(self.__after_easter(year).get(holiday.name))
                 case _ as holiday if 'WHIT_' in holiday.name:
                     self.dates.append(self.__whit(year).get(holiday.name))
@@ -128,12 +132,14 @@ class ChristianHoliday:
 
         return self
 
-    def __advents(self, year):
+    @staticmethod
+    def __advents(year):
         types = [church_year.name for church_year in ChurchYear]
         advents = list(filter(lambda x: re.compile('ADVENT').match(x), types))[:-1]
 
         ret_val = {}
-        advent_4 = last_weekday(self.__christmas(year)[ChurchYear.CHRISTMAS_1.name], 6)
+        christmas = calc_christmas(year)
+        advent_4 = last_weekday(christmas, 6)
         ret_val[ChurchYear.ADVENT_4.name] = advent_4
 
         for index, key in enumerate(advents):
@@ -144,7 +150,7 @@ class ChristianHoliday:
     @staticmethod
     def __christmas(year):
         ret_val = {}
-        christmas_1 = date_from_str(f'{year}-12-25')
+        christmas_1 = calc_christmas(year)
         ret_val[ChurchYear.CHRISTMAS_1.name] = christmas_1
 
         for index, key in enumerate([ChurchYear.CHRISTMAS_2.name, ChurchYear.CHRISTMAS_3.name]):
@@ -156,9 +162,9 @@ class ChristianHoliday:
 
         return ret_val
 
-    @staticmethod
-    def __new_year(year):
-        return date_from_str(f'{year}-01-01')
+    # @staticmethod
+    # def __new_year(year):
+    #     return date_from_str(f'{year}-01-01')
 
     @staticmethod
     def __epiphany(year):
@@ -170,9 +176,13 @@ class ChristianHoliday:
         epiphany = list(filter(lambda x: re.compile('EPIPHANY').match(x), types))
         epiphany.pop(0)
 
+        easter = calc_easter(year)
+        quinquagesima = easter - timedelta(weeks=7)
+
         for index, key in enumerate(epiphany):
             date = epiphany_1 + timedelta(weeks=index + 1)
-            ret_val[key] = date
+            if date < quinquagesima:
+                ret_val[key] = date
 
         return ret_val
 
@@ -244,14 +254,14 @@ class ChristianHoliday:
 
     @staticmethod
     def __trinity(year):
-        christmas = date_from_str(f'{year}-12-25')
+        christmas = calc_christmas(year)
         easter = calc_easter(year)
         advent_4 = last_weekday(christmas, 6)
 
         start_date = easter + timedelta(weeks=7)
         end_date = advent_4 - timedelta(weeks=3)
 
-        types = [member.name for member in ChurchYear]
+        types = [church_year.name for church_year in ChurchYear]
         trinitatis = list(filter(lambda x: re.compile('TRINITY_').match(x), types))
         ret_val = {}
         for index, key in enumerate(trinitatis):
@@ -262,7 +272,7 @@ class ChristianHoliday:
         return ret_val
 
 
-class ChurchGroup(ChristianGroup, Enum):
+class LabelCalendarSeason(CalendarSeason, Enum):
     ADVENT = 'Advent', 'https://en.wikipedia.org/wiki/Advent'
     CHRISTMAS = 'Christmas', 'https://en.wikipedia.org/wiki/Christmas'
     EPIPHANY = 'Epiphany', 'https://en.wikipedia.org/wiki/Epiphany_season'
@@ -273,94 +283,150 @@ class ChurchGroup(ChristianGroup, Enum):
     TRINITY = 'Trinity', ''
 
 
-class ChurchYear(ChristianHoliday, Enum):
-    ADVENT_1 = 'Advent I', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
-    ADVENT_2 = 'Advent II', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
-    ADVENT_3 = 'Advent III', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
-    ADVENT_4 = 'Advent IV', 'https://en.wikipedia.org/wiki/Advent', ChurchGroup.ADVENT.value
-    CHRISTMAS_1 = 'Christmas Day', 'https://en.wikipedia.org/wiki/Christmas', ChurchGroup.CHRISTMAS.value
-    CHRISTMAS_2 = "Saint Stephen's Day", 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day', ChurchGroup.CHRISTMAS.value
-    CHRISTMAS_3 = 'Third day of Christmas', 'https://en.wikipedia.org/wiki/Christmas', ChurchGroup.CHRISTMAS.value
-    CHRISTMAS_4 = 'Sunday after Christmas', 'https://en.wikipedia.org/wiki/Christmas_Sunday', ChurchGroup.CHRISTMAS.value
-    # nebo nazev po Novem roce
-    EPIPHANY_1 = 'Epiphany', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    EPIPHANY_2 = 'Epiphany I', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    EPIPHANY_3 = 'Epiphany II', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    EPIPHANY_4 = 'Epiphany III', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    EPIPHANY_5 = 'Epiphany IV', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    EPIPHANY_6 = 'Epiphany V', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', ChurchGroup.EPIPHANY.value
-    CANDLEMAS = 'Candlemas', 'https://en.wikipedia.org/wiki/Candlemas'
-    # 'https://en.wikipedia.org/wiki/Presentation_of_Jesus_at_the_Temple'
-    SEPTUAGESIMA = 'Septuagesima', 'https://en.wikipedia.org/wiki/Septuagesima', ChurchGroup.SHROVETIDE.value
-    SEXAGESIMA = 'Sexagesima', 'https://en.wikipedia.org/wiki/Sexagesima', ChurchGroup.SHROVETIDE.value
-    QUINQUAGESIMA = 'Quinquagesima', 'https://en.wikipedia.org/wiki/Quinquagesima', ChurchGroup.SHROVETIDE.value
-    PALM_SUNDAY = 'Palm Sunday', 'https://en.wikipedia.org/wiki/Palm_Sunday', ChurchGroup.HOLY_WEEK.value
-    GOOD_FRIDAY = 'Good Friday', 'https://en.wikipedia.org/wiki/Good_Friday', ChurchGroup.HOLY_WEEK.value
-    HOLY_SATURDAY = 'Holy Saturday', 'https://en.wikipedia.org/wiki/Holy_Saturday', ChurchGroup.HOLY_WEEK.value
-    EASTER = 'Easter', 'https://en.wikipedia.org/wiki/Easter', ChurchGroup.HOLY_WEEK.value
-
-    QUASIMODOGENITI = 'Second Sunday of Easter (Quasimodogeniti)', 'https://en.wikipedia.org/wiki/Second_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
-    MISERICORDIAS_DOMINI = 'Third Sunday of Easter (Misericordias Domini)', 'https://en.wikipedia.org/wiki/Third_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
-    JUBILATE = 'Fourth Sunday of Easter (Jubilate)', 'https://en.wikipedia.org/wiki/Fourth_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
-    CANTATE = 'Fifth Sunday of Easter (Cantate)', 'https://en.wikipedia.org/wiki/Fifth_Sunday_of_Easter', ChurchGroup.AFTER_EASTER.value
-    ROGATE = 'Sixth Sunday of Easter (Rogate)', 'https://en.wikipedia.org/wiki/Rogation_days', ChurchGroup.AFTER_EASTER.value
-    ASCENSION = 'Holy Thursday (Ascension)', 'https://en.wikipedia.org/wiki/Feast_of_the_Ascension', ChurchGroup.AFTER_EASTER.value
-    EXAUDI = 'Sunday after the Ascension (Exaudi)', 'https://www.csmedia1.com/ziondetroit.org/exaudi.pdf', ChurchGroup.AFTER_EASTER.value
-    WHIT_1 = 'Whit Sunday (Pentecost)', 'https://en.wikipedia.org/wiki/Pentecost', ChurchGroup.WHIT.value
-    WHIT_2 = 'Whit Monday', 'https://en.wikipedia.org/wiki/Whit_Monday', ChurchGroup.WHIT.value
-    WHIT_3 = 'Whit Tuesday', 'https://en.wikipedia.org/wiki/Whit_Tuesday', ChurchGroup.WHIT.value
+class LabelCalendarCycle(Enum):
+    TEMPORAL = 'Temporal Cycle'
+    SANCTORAL = 'Sanctoral Cycle'
 
 
-def generate_trinity_enum():
-    index = 0
-    enum_objects = []
-    while index < 28:
-        obj = 'TRINITY_' + str(index + 1), (('Trinity ' + int_to_roman(index)).rstrip(), 'https://en.wikipedia.org/wiki/Trinity_Sunday', ChurchGroup.TRINITY.value)
-        enum_objects.append(obj)
-        index += 1
-
+def get_church_year_enum():
+    # 'jak spocitat advent - objevuje se 30.11.'
+    # 'nedele po Vanocich a po Novem roce?'
     ret_val = Enum(
         "ChurchYear",
-        [(church_year.name, church_year.value) for church_year in ChurchYear] + enum_objects,
-        type=ChristianHoliday,
-    )
+        [
+            ('ADVENT_1', ('Advent I', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('ADVENT_2', ('Advent II', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('ADVENT_3', ('Advent III', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('ADVENT_4', ('Advent IV', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('CHRISTMAS_1', ('Christmas Day', 'https://en.wikipedia.org/wiki/Christmas', [LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('CHRISTMAS_2', ("Saint Stephen's Day", 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day', [LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('CHRISTMAS_3', ('Third day of Christmas', 'https://en.wikipedia.org/wiki/Christmas', [LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('CHRISTMAS_4', ('Sunday after Christmas', 'https://en.wikipedia.org/wiki/Christmas_Sunday', [LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value])),]
+        + generate_data_for_church_year_enum(
+            7,
+            'Epiphany',
+            'https://en.wikipedia.org/wiki/Epiphany_(holiday)',
+            [LabelCalendarSeason.EPIPHANY, LabelCalendarCycle.TEMPORAL]
+        ) +
+        [
+            ('SEPTUAGESIMA', ('Septuagesima', 'https://en.wikipedia.org/wiki/Septuagesima', [LabelCalendarSeason.SHROVETIDE.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('SEXAGESIMA', ('Sexagesima', 'https://en.wikipedia.org/wiki/Sexagesima', [LabelCalendarSeason.SHROVETIDE.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('QUINQUAGESIMA', ('Quinquagesima', 'https://en.wikipedia.org/wiki/Quinquagesima', [LabelCalendarSeason.SHROVETIDE.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('PALM_SUNDAY', ('Palm Sunday', 'https://en.wikipedia.org/wiki/Palm_Sunday', [LabelCalendarSeason.HOLY_WEEK.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('GOOD_FRIDAY', ('Good Friday', 'https://en.wikipedia.org/wiki/Good_Friday', [LabelCalendarSeason.HOLY_WEEK.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('HOLY_SATURDAY', ('Holy Saturday', 'https://en.wikipedia.org/wiki/Holy_Saturday', [LabelCalendarSeason.HOLY_WEEK.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('EASTER', ('Easter', 'https://en.wikipedia.org/wiki/Easter', [LabelCalendarSeason.HOLY_WEEK.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('QUASIMODOGENITI', ('Second Sunday of Easter (Quasimodogeniti)', 'https://en.wikipedia.org/wiki/Second_Sunday_of_Easter', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('MISERICORDIAS_DOMINI', ('Third Sunday of Easter (Misericordias Domini)', 'https://en.wikipedia.org/wiki/Third_Sunday_of_Easter', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('JUBILATE', ('Fourth Sunday of Easter (Jubilate)', 'https://en.wikipedia.org/wiki/Fourth_Sunday_of_Easter', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('CANTATE', ('Fifth Sunday of Easter (Cantate)', 'https://en.wikipedia.org/wiki/Fifth_Sunday_of_Easter', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('ROGATE', ('Sixth Sunday of Easter (Rogate)', 'https://en.wikipedia.org/wiki/Rogation_days', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('ASCENSION', ('Holy Thursday (Ascension)', 'https://en.wikipedia.org/wiki/Feast_of_the_Ascension', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('EXAUDI', ('Sunday after the Ascension (Exaudi)', 'https://www.csmedia1.com/ziondetroit.org/exaudi.pdf', [LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('WHIT_1', ('Whit Sunday (Pentecost)', 'https://en.wikipedia.org/wiki/Pentecost', [LabelCalendarSeason.WHIT.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('WHIT_2', ('Whit Monday', 'https://en.wikipedia.org/wiki/Whit_Monday', [LabelCalendarSeason.WHIT.value, LabelCalendarCycle.TEMPORAL.value])),
+            ('WHIT_3', ('Whit Tuesday', 'https://en.wikipedia.org/wiki/Whit_Tuesday', [LabelCalendarSeason.WHIT.value, LabelCalendarCycle.TEMPORAL.value])),
+        ]
+        + generate_data_for_church_year_enum(
+            28,
+            'trinity',
+            'https://en.wikipedia.org/wiki/Trinity_Sunday',
+            [LabelCalendarSeason.TRINITY, LabelCalendarCycle.TEMPORAL]
+        ),
+        type=ChristianHoliday)
 
     return ret_val
 
 
+# class ChurchYear(ChristianHoliday, Enum):
+#     ADVENT_1 = 'Advent I', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value, LabelCalendarCycle.TEMPORAL.value]
+#     ADVENT_2 = 'Advent II', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value,
+#                                                                      LabelCalendarCycle.TEMPORAL.value]
+#     ADVENT_3 = 'Advent III', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value,
+#                                                                       LabelCalendarCycle.TEMPORAL.value]
+#     ADVENT_4 = 'Advent IV', 'https://en.wikipedia.org/wiki/Advent', [LabelCalendarSeason.ADVENT.value,
+#                                                                      LabelCalendarCycle.TEMPORAL.value]
+#     CHRISTMAS_1 = 'Christmas Day', 'https://en.wikipedia.org/wiki/Christmas', [LabelCalendarSeason.CHRISTMAS.value,
+#                                                                                LabelCalendarCycle.TEMPORAL.value]
+#     CHRISTMAS_2 = "Saint Stephen's Day", 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day', [
+#         LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value]
+#     CHRISTMAS_3 = 'Third day of Christmas', 'https://en.wikipedia.org/wiki/Christmas', [
+#         LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value]
+#     CHRISTMAS_4 = 'Sunday after Christmas', 'https://en.wikipedia.org/wiki/Christmas_Sunday', [
+#         LabelCalendarSeason.CHRISTMAS.value, LabelCalendarCycle.TEMPORAL.value]
+#     # nebo nazev po Novem roce
+#     EPIPHANY_1 = 'Epiphany', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', [LabelCalendarSeason.EPIPHANY.value,
+#                                                                                   LabelCalendarCycle.TEMPORAL.value]
+#     EPIPHANY_2 = 'Epiphany I', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', [LabelCalendarSeason.EPIPHANY.value,
+#                                                                                     LabelCalendarCycle.TEMPORAL.value]
+#     EPIPHANY_3 = 'Epiphany II', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', [LabelCalendarSeason.EPIPHANY.value,
+#                                                                                      LabelCalendarCycle.TEMPORAL.value]
+#     EPIPHANY_4 = 'Epiphany III', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', [
+#         LabelCalendarSeason.EPIPHANY.value, LabelCalendarCycle.TEMPORAL.value]
+#     EPIPHANY_5 = 'Epiphany IV', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', [LabelCalendarSeason.EPIPHANY.value,
+#                                                                                      LabelCalendarCycle.TEMPORAL.value]
+#     EPIPHANY_6 = 'Epiphany V', 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', [LabelCalendarSeason.EPIPHANY.value,
+#                                                                                     LabelCalendarCycle.TEMPORAL.value]
+#     # CANDLEMAS = 'Candlemas', 'https://en.wikipedia.org/wiki/Candlemas'
+#     # 'https://en.wikipedia.org/wiki/Presentation_of_Jesus_at_the_Temple'
+#     SEPTUAGESIMA = 'Septuagesima', 'https://en.wikipedia.org/wiki/Septuagesima', [LabelCalendarSeason.SHROVETIDE.value,
+#                                                                                   LabelCalendarCycle.TEMPORAL.value]
+#     SEXAGESIMA = 'Sexagesima', 'https://en.wikipedia.org/wiki/Sexagesima', [LabelCalendarSeason.SHROVETIDE.value,
+#                                                                             LabelCalendarCycle.TEMPORAL.value]
+#     QUINQUAGESIMA = 'Quinquagesima', 'https://en.wikipedia.org/wiki/Quinquagesima', [
+#         LabelCalendarSeason.SHROVETIDE.value, LabelCalendarCycle.TEMPORAL.value]
+#     PALM_SUNDAY = 'Palm Sunday', 'https://en.wikipedia.org/wiki/Palm_Sunday', [LabelCalendarSeason.HOLY_WEEK.value,
+#                                                                                LabelCalendarCycle.TEMPORAL.value]
+#     GOOD_FRIDAY = 'Good Friday', 'https://en.wikipedia.org/wiki/Good_Friday', [LabelCalendarSeason.HOLY_WEEK.value,
+#                                                                                LabelCalendarCycle.TEMPORAL.value]
+#     HOLY_SATURDAY = 'Holy Saturday', 'https://en.wikipedia.org/wiki/Holy_Saturday', [
+#         LabelCalendarSeason.HOLY_WEEK.value, LabelCalendarCycle.TEMPORAL.value]
+#     EASTER = 'Easter', 'https://en.wikipedia.org/wiki/Easter', [LabelCalendarSeason.HOLY_WEEK.value,
+#                                                                 LabelCalendarCycle.TEMPORAL.value]
+#
+#     QUASIMODOGENITI = 'Second Sunday of Easter (Quasimodogeniti)', 'https://en.wikipedia.org/wiki/Second_Sunday_of_Easter', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     MISERICORDIAS_DOMINI = 'Third Sunday of Easter (Misericordias Domini)', 'https://en.wikipedia.org/wiki/Third_Sunday_of_Easter', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     JUBILATE = 'Fourth Sunday of Easter (Jubilate)', 'https://en.wikipedia.org/wiki/Fourth_Sunday_of_Easter', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     CANTATE = 'Fifth Sunday of Easter (Cantate)', 'https://en.wikipedia.org/wiki/Fifth_Sunday_of_Easter', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     ROGATE = 'Sixth Sunday of Easter (Rogate)', 'https://en.wikipedia.org/wiki/Rogation_days', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     ASCENSION = 'Holy Thursday (Ascension)', 'https://en.wikipedia.org/wiki/Feast_of_the_Ascension', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     EXAUDI = 'Sunday after the Ascension (Exaudi)', 'https://www.csmedia1.com/ziondetroit.org/exaudi.pdf', [
+#         LabelCalendarSeason.AFTER_EASTER.value, LabelCalendarCycle.TEMPORAL.value]
+#     WHIT_1 = 'Whit Sunday (Pentecost)', 'https://en.wikipedia.org/wiki/Pentecost', [LabelCalendarSeason.WHIT.value,
+#                                                                                     LabelCalendarCycle.TEMPORAL.value]
+#     WHIT_2 = 'Whit Monday', 'https://en.wikipedia.org/wiki/Whit_Monday', [LabelCalendarSeason.WHIT.value,
+#                                                                           LabelCalendarCycle.TEMPORAL.value]
+#     WHIT_3 = 'Whit Tuesday', 'https://en.wikipedia.org/wiki/Whit_Tuesday', [LabelCalendarSeason.WHIT.value,
+#                                                                             LabelCalendarCycle.TEMPORAL.value]
+#
+#
+def generate_data_for_church_year_enum(count, name, link, labels):
+    index = 0
+    ret_val = []
+    while index < count:
+        obj = name.upper() + '_' + str(index + 1), (
+            (name.capitalize() + ' ' + int_to_roman(index)).rstrip(),
+            link,
+            list(map(lambda label: label.value, labels)))
+        ret_val.append(obj)
+        index += 1
+
+    return ret_val
+
+
+ChurchYear = get_church_year_enum()
+
+
 def christian_holidays():
-    ChurchYear = generate_trinity_enum()
     holidays = []
-    for member in ChurchYear:
-        # print(member.value)
-        holidays.append(member.dates_for_holiday(member, range(2022, 2023)))
-
-    df = pd.DataFrame([vars(t) for t in holidays]).loc[:, ['title', 'url_link', 'group', 'dates']]
-    df.to_csv("test.csv", index=False)
-
-if __name__ == '__main__':
-    # christian_holidays()
-    holidays = []
-
-    # print("Ascension".upper())
-
-    # types = [church_year for church_year in ChurchYear]
-    # # print(types)
-    # ExistingEnum = Enum('ExistingEnum', types)
-    # for member in ExistingEnum:
-    #     print(member)
-    # ChurchYear = Enum(
-    #     "ChurchYear",
-    #     [(church_year.name, church_year.value) for church_year in ChurchYear] + [('WHIT_4', ('Whit Test', 'https://en.wikipedia.org/wiki/Whit_Tuesday', ChurchGroup.WHIT.value))],
-    #     type=ChristianHoliday,
-    # )
-    # generate_trinity_enum()
-    ChurchYear = generate_trinity_enum()
-
     for member in ChurchYear:
         holidays.append(member.dates_for_holiday(member, range(2022, 2023)))
 
-    # print(holidays)
-    df = pd.DataFrame([vars(t) for t in holidays]).loc[:, ['title', 'url_link', 'group', 'dates']]
-    # df['group'].str.split(' ', expand=True).set_axis(['Number', 'Letter'], axis='group')
+    df = pd.DataFrame([vars(t) for t in holidays]).loc[:, ['title', 'url_link', 'labels', 'dates']]
     df.to_csv("test.csv", index=False)
