@@ -15,15 +15,19 @@ class EventType(enum.Enum):
     # ADV3 = {'title': 'Advent III', 'link': 'https://en.wikipedia.org/wiki/Advent', 'bwv': []}
     ADV4 = {'title': 'Advent IV', 'link': 'https://en.wikipedia.org/wiki/Advent', 'bwv': [132]}
     CHR1 = {'title': 'Christmas Day', 'link': 'https://en.wikipedia.org/wiki/Christmas', 'bwv': [63, 91, 110, 191]}
-    CHR2 = {'title': "Saint Stephen's Day", 'link': 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day', 'bwv': [40, 57, 121]}
+    CHR2 = {'title': "Saint Stephen's Day", 'link': 'https://en.wikipedia.org/wiki/Saint_Stephen%27s_Day',
+            'bwv': [40, 57, 121]}
     CHR3 = {'title': 'Third day of Christmas', 'link': 'https://en.wikipedia.org/wiki/Christmas', 'bwv': [64, 133, 151]}
-    CHR4 = {'title': 'Sunday after Christmas', 'link': 'https://en.wikipedia.org/wiki/Christmas_Sunday', 'bwv': [28, 122, 152]}
-    NYD1 = {'title': "New Year's Day", 'link': 'https://en.wikipedia.org/wiki/New_Year%27s_Day', 'bwv': [16, 41, 143, 171, 190]}
+    CHR4 = {'title': 'Sunday after Christmas', 'link': 'https://en.wikipedia.org/wiki/Christmas_Sunday',
+            'bwv': [28, 122, 152]}
+    NYD1 = {'title': "New Year's Day", 'link': 'https://en.wikipedia.org/wiki/New_Year%27s_Day',
+            'bwv': [16, 41, 143, 171, 190]}
     NYD2 = {'title': "New Year's Day I", 'link': 'https://en.wikipedia.org/wiki/New_Year%27s_Day', 'bwv': [58, 153]}
     EPH0 = {'title': "Epiphany", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', 'bwv': [65, 123]}
     EPH1 = {'title': "Epiphany I", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', 'bwv': [32, 124, 154]}
     EPH2 = {'title': "Epiphany II", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', 'bwv': [3, 13, 155]}
-    EPH3 = {'title': "Epiphany III", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', 'bwv': [72, 73, 111, 156]}
+    EPH3 = {'title': "Epiphany III", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)',
+            'bwv': [72, 73, 111, 156]}
     EPH4 = {'title': "Epiphany IV", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', 'bwv': [14, 81]}
     # EPH5 = {'title': "Epiphany V", 'link': 'https://en.wikipedia.org/wiki/Epiphany_(holiday)', 'bwv': []}
     PURI = {'title': "Candlemas", 'link': 'https://en.wikipedia.org/wiki/Candlemas', 'bwv': [82, 83, 125]}
@@ -36,15 +40,23 @@ class EventType(enum.Enum):
     EAS1 = {'title': "Easter", 'link': 'https://en.wikipedia.org/wiki/Easter', 'bwv': [4, 31]}
     EAS2 = {'title': "Easter Monday", 'link': 'https://en.wikipedia.org/wiki/Easter', 'bwv': [6, 66]}
     EAS3 = {'title': "Easter Tuesday", 'link': 'https://en.wikipedia.org/wiki/Easter', 'bwv': [134, 145, 158]}
-    QUAS = {'title': "Second Sunday of Easter (Quasimodogeniti)", 'link': 'https://en.wikipedia.org/wiki/Second_Sunday_of_Easter', 'bwv': [42, 67]}
-    MISE = {'title': "Third Sunday of Easter (Misericordias Domini)", 'link': 'https://en.wikipedia.org/wiki/Third_Sunday_of_Easter', 'bwv': [85, 104, 112]}
-    JUBI = {'title': "Fourth Sunday of Easter (Jubilate)", 'link': 'https://en.wikipedia.org/wiki/Fourth_Sunday_of_Easter', 'bwv': [12, 103, 146]}
-    CANT = {'title': "Fifth Sunday of Easter (Cantate)", 'link': 'https://en.wikipedia.org/wiki/Fifth_Sunday_of_Easter', 'bwv': [108, 166]}
-    ROGA = {'title': "Sixth Sunday of Easter (Rogate)", 'link': 'https://en.wikipedia.org/wiki/Rogation_days', 'bwv': [86, 87]}
-    ASCE = {'title': "Holy Thursday (Ascension)", 'link': 'https://en.wikipedia.org/wiki/Feast_of_the_Ascension', 'bwv': [11, 37, 43, 128]}
-    EXAU = {'title': "Sunday after the Ascension (Exaudi)", 'link': 'https://www.csmedia1.com/ziondetroit.org/exaudi.pdf', 'bwv': [44, 183]}
+    QUAS = {'title': "Second Sunday of Easter (Quasimodogeniti)",
+            'link': 'https://en.wikipedia.org/wiki/Second_Sunday_of_Easter', 'bwv': [42, 67]}
+    MISE = {'title': "Third Sunday of Easter (Misericordias Domini)",
+            'link': 'https://en.wikipedia.org/wiki/Third_Sunday_of_Easter', 'bwv': [85, 104, 112]}
+    JUBI = {'title': "Fourth Sunday of Easter (Jubilate)",
+            'link': 'https://en.wikipedia.org/wiki/Fourth_Sunday_of_Easter', 'bwv': [12, 103, 146]}
+    CANT = {'title': "Fifth Sunday of Easter (Cantate)", 'link': 'https://en.wikipedia.org/wiki/Fifth_Sunday_of_Easter',
+            'bwv': [108, 166]}
+    ROGA = {'title': "Sixth Sunday of Easter (Rogate)", 'link': 'https://en.wikipedia.org/wiki/Rogation_days',
+            'bwv': [86, 87]}
+    ASCE = {'title': "Holy Thursday (Ascension)", 'link': 'https://en.wikipedia.org/wiki/Feast_of_the_Ascension',
+            'bwv': [11, 37, 43, 128]}
+    EXAU = {'title': "Sunday after the Ascension (Exaudi)",
+            'link': 'https://www.csmedia1.com/ziondetroit.org/exaudi.pdf', 'bwv': [44, 183]}
     ANNU = {'title': "Annunciation", 'link': 'https://en.wikipedia.org/wiki/Annunciation', 'bwv': [1]}
-    WHI1 = {'title': "Whit Sunday (Pentecost)", 'link': 'https://en.wikipedia.org/wiki/Pentecost', 'bwv': [34, 59, 74, 172]}
+    WHI1 = {'title': "Whit Sunday (Pentecost)", 'link': 'https://en.wikipedia.org/wiki/Pentecost',
+            'bwv': [34, 59, 74, 172]}
     WHI2 = {'title': "Whit Monday", 'link': 'https://en.wikipedia.org/wiki/Whit_Monday', 'bwv': [68, 173, 174]}
     WHI3 = {'title': "Whit Tuesday", 'link': 'https://en.wikipedia.org/wiki/Whit_Tuesday', 'bwv': [175, 184]}
     TR00 = {'title': "Trinity", 'link': 'https://en.wikipedia.org/wiki/Trinity_Sunday', 'bwv': [129, 165, 176, 194]}
@@ -75,10 +87,12 @@ class EventType(enum.Enum):
     TR25 = {'title': "Trinity XXV", 'link': 'https://en.wikipedia.org/wiki/Trinity_Sunday', 'bwv': [90, 116]}
     TR26 = {'title': "Trinity XXVI", 'link': 'https://en.wikipedia.org/wiki/Trinity_Sunday', 'bwv': [70]}
     TR27 = {'title': "Trinity XXVII", 'link': 'https://en.wikipedia.org/wiki/Trinity_Sunday', 'bwv': [140]}
-    JOHN = {'title': "Nativity of Saint John the Baptist", 'link': 'https://en.wikipedia.org/wiki/Nativity_of_John_the_Baptist', 'bwv': [7, 30, 167]}
+    JOHN = {'title': "Nativity of Saint John the Baptist",
+            'link': 'https://en.wikipedia.org/wiki/Nativity_of_John_the_Baptist', 'bwv': [7, 30, 167]}
     MICH = {'title': "Michaelmas", 'link': 'https://en.wikipedia.org/wiki/Michaelmas', 'bwv': [19, 50, 130, 149]}
     VISI = {'title': "Visitation", 'link': 'https://en.wikipedia.org/wiki/Visitation_(Christianity)', 'bwv': [10, 147]}
     REFO = {'title': "Reformation Day", 'link': 'https://en.wikipedia.org/wiki/Reformation_Day', 'bwv': [79, 80]}
+
 
 # def append_to_dataframe(data):
 #     events = pd.concat([events, data])

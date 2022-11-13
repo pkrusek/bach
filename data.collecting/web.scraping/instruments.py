@@ -134,14 +134,14 @@ def get_movement_source_for(cantata):
     global df_movement_sources
     try:
         sp = helpers.make_request(f'https://bach-cantatas.com/INS/{cantata}')
-        tmp = pd.DataFrame(columns=['BWV','Source'])
+        tmp = pd.DataFrame(columns=['BWV', 'Source'])
         tmp.loc[0] = [cantata, sp]
         df_movement_sources = pd.concat([df_movement_sources, tmp])
 
         next_mvt = sp.find(text=re.compile('Next Mvt')).findParent('a')
         if next_mvt is None:
             pprint(f'cantata {cantata} done')
-            df_movement_sources.to_csv("./_data/movements_sources.csv")
+            df_movement_sources.to_csv("./_data/sources/movements_sources1.csv")
             time.sleep(1.5)
             get_movements_sources(cantata)
         else:
@@ -154,13 +154,17 @@ def get_movement_source_for(cantata):
 
 
 def get_movements_sources(cantata):
-    # 'BWV015-01.htm'
-    # 'BWV082-01.htm'
-    # 'BWV118-01.htm'
-    # '127, 128'
+    # 'BWV015-01.htm' not exists
+    # 'BWV082-01.htm' not exists
+    # 'BWV118-01.htm' not exists
+    "error in source - cantata BWV189-01.htm with error 'NoneType' object has no attribute 'findParent'"
+    "error in source - cantata BWV160-01.htm with error 'NoneType' object has no attribute 'findParent'"
+    "error in source - cantata BWV141-01.htm with error 'NoneType' object has no attribute 'findParent'"
+    "error in source - cantata BWV142-01.htm with error 'NoneType' object has no attribute 'findParent'"
     cantata = re.sub('-.*htm', '-01.htm', cantata)
-    bwv = list(range(1, 200))
-    bwv.remove(198)
+    bwv = list(range(100, 200))
+    unwanted = {15, 82, 118, 198}
+    bwv = [ele for ele in bwv if ele not in unwanted]
     bwv = list(map(lambda x: f'BWV{str(x).zfill(3)}-01.htm', bwv))
     try:
         indx = bwv.index(cantata)
@@ -177,7 +181,7 @@ if __name__ == '__main__':
 
     df_movement_sources = pd.DataFrame()
 
-    get_movement_source_for('BWV001-01.htm')
+    # get_movement_source_for('BWV100-01.htm')
     # df = pd.read_csv('./_data/movements_sources.csv')
     # pprint(df)
 
